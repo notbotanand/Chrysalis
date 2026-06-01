@@ -1,0 +1,40 @@
+# Chrysalis — Account Configuration (FICTIONAL EXAMPLE)
+# This is what a populated accounts.yaml looks like. See examples/README.md.
+# To configure your own: run "Update my accounts" in Claude Code.
+# ─────────────────────────────────────────────────────────────────────────────
+
+email:
+  accounts:
+    - provider: gmail
+      address: maya@example.com
+      mcp: gmail
+      primary: true
+      notes: "Primary job search inbox. Gmail MCP connected."
+
+    - provider: outlook
+      address: maya.patel@example.com
+      mcp: apple-mail
+      primary: false
+      notes: "Secondary — old work account, configured in Mail.app for archive search."
+
+# ─────────────────────────────────────────────────────────────────────────────
+calendar:
+  # Apple Calendar aggregates iCloud, Exchange, and Google sources.
+  # List every calendar name to READ from via JXA. Deduplication handles overlaps.
+  read_names:
+    - "Calendar"          # Primary work/interview calendar
+    - "Personal"          # iCloud personal calendar
+    - "Family"            # Shared family calendar
+
+  # Optional: Google Calendar MCP. Only present if user opted in during setup.
+  google_calendar:
+    mcp: google_calendar
+    personal_calendar_id: "maya@example.com"
+
+  # Write target for prep blocks (24h before each interview) and debrief blocks
+  # (immediately after each interview).
+  write_target: "Calendar"
+  write_mechanism: jxa     # jxa | google_calendar_mcp
+
+  # Deduplication strategy when reading from multiple source calendars.
+  dedup_by: title_date     # Match on (normalized_title, start_date) — ignore source

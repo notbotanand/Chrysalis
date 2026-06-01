@@ -1,0 +1,118 @@
+# ─────────────────────────────────────────────
+# CHRYSALIS — FRAMEWORK INDEX
+# This file is the router and schema for the OS. It is read at the start
+# of every session. The `paths:` block is the source of truth for where
+# user data lives — all workflows and tools reference these locations.
+# ─────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# PATHS — where things live in this repo
+# Workflows and tools resolve every file path through this map.
+# When the structure changes, update here first.
+# ─────────────────────────────────────────────
+paths:
+  # User data (lives under data/, ships empty in public cut)
+  profile:          data/profile/me.md
+  manifest:         data/manifest.yaml              # populated in Phase 3
+  sweep_state:      data/state/sweep_state.yaml     # populated in Phase 3
+  interview_state:  data/state/interviews.yaml      # per-interview prep/debrief tracking
+  pipeline_dir:     data/pipeline/
+  pipeline_temp:    data/pipeline/_temp/
+  accounts:         data/config/accounts.yaml
+  known_events:     data/config/known_events.yaml
+  logs_today:       data/logs/today/
+  logs_today_brief: data/logs/today/brief.md
+  logs_today_updates: data/logs/today/updates.md
+  logs_weekly:      data/logs/weekly/
+  market_digest:    data/market/digest.md
+  deliverables:    data/deliverables/
+  learning_dir:     data/learning/
+
+  # Framework
+  templates:
+    pipeline:       framework/templates/pipeline-card.md
+    learning:       framework/templates/learning-card.md
+    profile:        framework/templates/profile.md
+  workflows_dir:    framework/workflows/
+  dashboard_tool:   framework/tools/generate_dashboard.py
+
+  # Generated output (gitignored)
+  dashboard_html:   dashboard.html
+
+# ─────────────────────────────────────────────
+# SCHEMAS — what each thing looks like
+# Used for validation and as a writing reference.
+# ─────────────────────────────────────────────
+schemas:
+  pipeline_card:
+    frontmatter_required:
+      - card_id
+      - card_type
+      - stage
+      - priority
+      - last_updated
+    sections_required:
+      - "Business Overview"
+      - "User Base & Geography"
+      - "Profile-Aware Analysis"
+  manifest_entry:
+    fields:
+      - id
+      - type
+      - stage
+      - summary
+      - priority
+      - tags
+      - updated
+      - next_action
+      - has_temp
+  interview_entry:
+    fields:
+      - company           # display name
+      - card_id           # pipeline/slug
+      - round             # recruiter_screen | hm | second_interview | panel | exec | take_home
+      - label             # human-readable description
+      - start             # ISO-8601 with tz offset
+      - end               # ISO-8601 with tz offset
+      - interviewer       # name or null
+      - prep_block_created   # bool
+      - debrief_block_created  # bool
+      - debrief_logged    # bool — set true by debrief workflow
+      - outcome           # pending | passed | rejected | withdrawn
+  known_event_entry:
+    note: "v2 schema — all entries are YAML objects with a `sig` field"
+    fields:
+      - sig               # dedup key: "normalized_title|YYYY-MM-DDTHH:MM|YYYY-MM-DDTHH:MM"
+                          # legacy v1: "normalized_title|YYYY-MM-DD"
+      - title             # original calendar title
+      - start             # ISO-8601 with tz, or null for legacy
+      - end               # ISO-8601 with tz, or null for legacy
+      - date              # YYYY-MM-DD
+      - calendar          # Apple Calendar source name
+      - type              # interview | prep | debrief | general
+      - linked_card       # pipeline/slug or null
+      - prep_created      # bool (interview-type entries only)
+      - debrief_created   # bool (interview-type entries only)
+      - last_seen         # YYYY-MM-DD of most recent sweep
+
+# ─────────────────────────────────────────────
+# RULES — cross-cutting behavior
+# Referenced by CLAUDE.md and workflows.
+# ─────────────────────────────────────────────
+rules:
+  research_required_at_stage: screening   # cards at this stage or above must have research complete
+  stale_card_days: 7                      # high-priority cards untouched this long are flagged in briefs
+  debrief_outstanding_days: 0             # flag debrief_logged: false immediately after interview
+  card_completeness_blockers:
+    - last_user_research_updated_is_null
+    - business_overview_empty
+    - user_base_geography_empty
+    - profile_aware_analysis_empty
+
+
+# ─────────────────────────────────────────────
+# (Card manifest and sweep state moved out — see paths above.)
+#   • Per-user card list  → data/manifest.yaml         (paths.manifest)
+#   • Per-sweep state     → data/state/sweep_state.yaml (paths.sweep_state)
+# This file (framework/index.yaml) is framework-only and user-agnostic.
+# ─────────────────────────────────────────────

@@ -1,0 +1,37 @@
+# Chrysalis — Card Manifest (FICTIONAL EXAMPLE)
+# This is what a populated data/manifest.yaml looks like. See examples/README.md.
+# The manifest is the index of every card Chrysalis loads at session start —
+# profile, pipeline cards, and any learning cards. Updated by workflows
+# whenever a card is added, advanced, or archived.
+# ─────────────────────────────────────────────────────────────────────────────
+cards:
+  - id: profile/me
+    type: personal_profile
+    summary: "Maya Patel — 9yr PM, fintech/payments. Senior PM at Series C devtools co. Targeting GPM/Director at Series B/C fintech."
+    priority: always_load
+    updated: "2026-04-15"
+
+  # ─── ACTIVE PIPELINE — HIGH PRIORITY ───────
+  # Sorted by next interview date
+
+  - id: pipeline/acme-payments
+    type: company_pipeline
+    stage: interviewing
+    summary: "Acme Payments — GPM Billing Platform. HM passed Apr 10. Panel Apr 22 (Product Sense + Strategy + Bar Raiser)."
+    priority: high
+    tags: [fintech, payments, series-c, developer-platform]
+    updated: "2026-04-15"
+    next_action: "Run prep planner before panel on Apr 22 — 3 rounds"
+    has_temp: false
+
+  # ─── ACTIVE PIPELINE — MEDIUM PRIORITY ─────
+
+  - id: pipeline/globex-wallet
+    type: company_pipeline
+    stage: screening
+    summary: "Globex Wallet — Director of Product, SMB wallet. Series B fintech. Recruiter screen Apr 18. Comp unclear."
+    priority: medium
+    tags: [fintech, wallet, series-b, consumer-adjacent]
+    updated: "2026-04-14"
+    next_action: "Recruiter screen Apr 18 11:00 AM PT — lead with comp question"
+    has_temp: false

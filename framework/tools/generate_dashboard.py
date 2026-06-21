@@ -16,6 +16,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent.parent  # framework/tools/X.py → repo root
+DATA = REPO / 'data'       # overridable via --data-dir
+OUT_PATH = REPO / 'dashboard.html'  # overridable via --output
 
 # ── YAML ─────────────────────────────────────────────────────────────────────
 
@@ -174,7 +176,7 @@ def first_para(text):
 
 # ── Data extraction ───────────────────────────────────────────────────────────
 
-STAGE_ORDER = {'interviewing': 0, 'screening': 1, 'applied': 2, 'researching': 3}
+STAGE_ORDER = {'offer': 0, 'final_round': 1, 'interviewing': 2, 'screening': 3, 'applied': 4, 'researching': 5}
 
 def prep_detail(text, stage):
     if stage not in ('screening', 'interviewing', 'final_round'):
@@ -253,7 +255,7 @@ def days_old(ds):
         return 0
 
 def load_profile_name():
-    fp = REPO / 'data' / 'profile' / 'me.md'
+    fp = DATA / 'profile' / 'me.md'
     if not fp.exists():
         return ''
     m = re.search(r'^#\s+(.+?)(?:\s+—.*)?$', fp.read_text(encoding='utf-8'), re.MULTILINE)
@@ -262,7 +264,7 @@ def load_profile_name():
 def load_search_start_date():
     """Optional data/profile/index override for search start date; falls back to current personal default."""
     candidates = [
-        REPO / 'data' / 'profile' / 'me.md',
+        DATA / 'profile' / 'me.md',
         REPO / 'framework' / 'index.yaml',
     ]
     for fp in candidates:
@@ -288,7 +290,7 @@ def load_search_start_date():
 def load_companies():
     # Manifest split out of framework/index.yaml in Phase 3. It now lives
     # under data/ (per-user). framework/index.yaml stays framework-only.
-    fp = REPO / 'data' / 'manifest.yaml'
+    fp = DATA / 'manifest.yaml'
     if not fp.exists():
         return []
     manifest = parse_yaml(fp.read_text(encoding='utf-8'))
@@ -300,19 +302,19 @@ def load_companies():
         if not cid.startswith('pipeline/'):
             continue
         slug    = cid[len('pipeline/'):]
-        card_fp = REPO / 'data' / f'{cid}.md'
+        card_fp = DATA / f'{cid}.md'
         text    = card_fp.read_text(encoding='utf-8') if card_fp.exists() else ''
         fm      = frontmatter(text)
 
         hm   = re.search(r'^#\s+(.+)$', text, re.MULTILINE)
         name = hm.group(1).strip() if hm else slug.replace('-', ' ').title()
 
-        stage    = str(fm.get('stage')    or meta.get('stage',    'researching'))
-        priority = str(fm.get('priority') or meta.get('priority', 'medium'))
+        stage    = str(meta.get('stage')    or fm.get('stage')    or 'researching')
+        priority = str(meta.get('priority') or fm.get('priority') or 'medium')
         tags     = fm.get('tags') or meta.get('tags', [])
         if isinstance(tags, str):
             tags = [t.strip() for t in re.split(r'[,\s]+', tags) if t.strip()]
-        updated          = str(fm.get('last_updated') or meta.get('updated', ''))
+        updated          = str(meta.get('updated') or fm.get('last_updated') or '')
         research_updated = str(fm.get('last_user_research_updated') or '')
         if research_updated in ('null', 'None'):
             research_updated = ''
@@ -325,7 +327,7 @@ def load_companies():
             'stage':            stage,
             'priority':         priority,
             'tags':             tags if isinstance(tags, list) else [],
-            'next_action':      str(fm.get('next_action') or meta.get('next_action', '')),
+            'next_action':      str(meta.get('next_action') or fm.get('next_action') or ''),
             'last_updated':     updated,
             'research_updated': research_updated,
             'next_interview':   next_interview_label(text),
@@ -336,13 +338,14 @@ def load_companies():
             # "Tier 1" in the summary of their strongest-fit cards.
             'tier1':            'tier 1' in str(meta.get('summary', '')).lower(),
             'stale':            days_old(updated) > 7,
+            'stale_days':       days_old(updated),
             **rich,
         })
     out.sort(key=lambda c: (STAGE_ORDER.get(c['stage'], 9), 0 if c['priority'] == 'high' else 1))
     return out
 
 def load_today_content():
-    today_dir = REPO / 'data' / 'logs' / 'today'
+    today_dir = DATA / 'logs' / 'today'
     brief = ''
     updates = []
     brief_fp = today_dir / 'brief.md'
@@ -362,7 +365,7 @@ def load_interviews():
     interviewer, outcome, debrief_logged, and notes fields.
     Used as the primary source of truth for the calendar view.
     """
-    fp = REPO / 'data' / 'state' / 'interviews.yaml'
+    fp = DATA / 'state' / 'interviews.yaml'
     if not fp.exists():
         return []
     raw = parse_yaml(fp.read_text(encoding='utf-8'))
@@ -411,7 +414,7 @@ def load_signals():
     Returns entries from the last 7 days, newest-first, capped at 12.
     Falls back to the 12 most recent entries if fewer than 3 found in window.
     """
-    fp = REPO / 'data' / 'market' / 'digest.md'
+    fp = DATA / 'market' / 'digest.md'
     if not fp.exists():
         return []
     text = fp.read_text(encoding='utf-8')
@@ -579,11 +582,12 @@ body{
 .wd-lbl{font-size:10px;font-weight:850;text-transform:uppercase;color:var(--mu);letter-spacing:.05em}
 .wd-num{font-size:27px;font-weight:900;line-height:1;margin:7px 0 5px;letter-spacing:-.05em}
 .wd-ev{font-size:12px;color:var(--mu);font-weight:650}
-.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .kcol-hdr{
   font-size:12px;font-weight:850;padding:10px 12px;border-radius:14px;
   display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border:1px solid transparent;
 }
+.kcol[data-s=final_round] .kcol-hdr{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
 .kcol[data-s=interviewing] .kcol-hdr{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
 .kcol[data-s=screening] .kcol-hdr{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
 .kcol[data-s=applied] .kcol-hdr{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}
@@ -594,6 +598,7 @@ body{
   transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
 }
 .kc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blu);opacity:.75}
+.kcol[data-s=final_round] .kc::before{background:#10b981}
 .kcol[data-s=interviewing] .kc::before{background:var(--amb)}
 .kcol[data-s=applied] .kc::before{background:var(--pur)}
 .kc.t1::before{background:linear-gradient(180deg,var(--amb),var(--ind))}
@@ -650,10 +655,15 @@ body{
 .co-item:hover{background:rgba(99,102,241,.06)}
 .co-item.active{background:#eef2ff;color:#312e81;box-shadow:inset 0 0 0 1px rgba(99,102,241,.12)}
 .co-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(148,163,184,.14)}
+.dot-offer{background:#059669}
+.dot-final_round{background:#10b981}
 .dot-interviewing{background:var(--amb)}
 .dot-screening{background:var(--blu)}
 .dot-applied{background:var(--pur)}
 .dot-researching{background:var(--fa)}
+.dot-rejected{background:#d1d5db}
+.dot-withdrawn{background:#d1d5db}
+.dot-stalled{background:#d1d5db}
 .co-item-name{font-size:13.5px;font-weight:700;flex:1;line-height:1.3}
 .co-star{color:var(--amb);font-size:12px;line-height:1}
 .co-panel{overflow-y:auto;background:transparent;padding:22px 30px;min-height:0}
@@ -1079,20 +1089,25 @@ function renderKCard(c){
   const extra=(c.tags||[]).length-shown.length;
   const tags=shown.map(t=>`<span class="tag">${esc(t)}</span>`).join('')+(extra>0?`<span class="tag">+${extra}</span>`:'');
   return`<div class="kc${c.tier1?' t1':''}">
-    <div class="kc-name">${esc(c.name)}${c.tier1?bdg('Tier 1','bdg-t1'):''}${c.stale?bdg('Stale','bdg-st'):''}</div>
+    <div class="kc-name">${esc(c.name)}${c.tier1?bdg('Tier 1','bdg-t1'):''}${c.stale?`<span class="bdg bdg-st" title="Not updated in ${c.stale_days||0} days — run Debrief or Research to refresh">Stale (${c.stale_days||0}d)</span>`:''}</div>
     ${nxt}${act}${(c.tags||[]).length?`<div class="kc-tags">${tags}</div>`:''}
     ${prepBar(c.prep_score,'Prep')}
   </div>`;
 }
 
 function renderKanban(){
-  const stages=[{key:'interviewing',lbl:'Interviewing'},{key:'screening',lbl:'Screening'},{key:'applied',lbl:'Applied'}];
+  const stages=[
+    {keys:['offer','final_round'],lbl:'Final Round',s:'final_round'},
+    {keys:['interviewing'],lbl:'Interviewing',s:'interviewing'},
+    {keys:['screening'],lbl:'Screening',s:'screening'},
+    {keys:['applied'],lbl:'Applied',s:'applied'}
+  ];
   const wrap=el('div');
   wrap.appendChild(el('div','sec','Pipeline'));
   const kb=el('div','kanban');
-  stages.forEach(({key,lbl})=>{
-    const cos=DATA.companies.filter(c=>c.stage===key);
-    const col=el('div','kcol');col.dataset.s=key;
+  stages.forEach(({keys,lbl,s})=>{
+    const cos=DATA.companies.filter(c=>keys.includes(c.stage));
+    const col=el('div','kcol');col.dataset.s=s;
     col.innerHTML=`<div class="kcol-hdr"><span>${esc(lbl)}</span><span class="kcol-n">${cos.length}</span></div>`;
     cos.forEach(c=>{col.innerHTML+=renderKCard(c)});
     kb.appendChild(col);
@@ -1590,7 +1605,7 @@ def build_html(data):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def generate():
+def generate(open_browser=True):
     companies       = load_companies()
     signals         = load_signals()
     interviews      = load_interviews()
@@ -1612,18 +1627,32 @@ def generate():
     }
 
     html  = build_html(data)
-    out   = REPO / 'dashboard.html'
+    out   = OUT_PATH
     out.write_text(html, encoding='utf-8')
     print(f'✓  Dashboard written → {out}')
 
-    cmd = {'darwin': 'open', 'windows': 'start', 'linux': 'xdg-open'}.get(
-        platform.system().lower())
-    if cmd:
-        try:
-            subprocess.Popen([cmd, str(out)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
+    if open_browser:
+        cmd = {'darwin': 'open', 'windows': 'start', 'linux': 'xdg-open'}.get(
+            platform.system().lower())
+        if cmd:
+            try:
+                subprocess.Popen([cmd, str(out)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
     return out
 
 if __name__ == '__main__':
-    generate()
+    import argparse
+    p = argparse.ArgumentParser(description='Chrysalis Dashboard Generator')
+    p.add_argument('--data-dir', type=Path, default=None,
+                   help='Override data directory (default: <repo>/data)')
+    p.add_argument('--output', type=Path, default=None,
+                   help='Override output HTML path (default: <repo>/dashboard.html)')
+    p.add_argument('--no-open', action='store_true',
+                   help='Do not open the dashboard in a browser after generating')
+    args = p.parse_args()
+    if args.data_dir:
+        DATA = args.data_dir.resolve()
+    if args.output:
+        OUT_PATH = args.output.resolve()
+    generate(open_browser=not args.no_open)

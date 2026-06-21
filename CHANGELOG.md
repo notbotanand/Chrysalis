@@ -11,6 +11,33 @@ All notable changes to Chrysalis are documented here. This project uses
 
 ---
 
+## [1.1.0] — 2026-06-20
+
+### Added
+- **Dashboard generator CLI flags.** `framework/tools/generate_dashboard.py`
+  gained `--data-dir`, `--output`, and `--no-open`. Lets dashboard
+  generation target any data root and any output path without touching
+  the canonical `data/` tree or `dashboard.html`. Useful for testing
+  or running side-by-side dashboards.
+- **`final_round` and `offer` kanban columns.** The pipeline kanban
+  now shows companies that have reached final round or have an offer
+  outstanding as their own columns, instead of bucketing them with
+  `interviewing`.
+
+### Changed
+- **Manifest-first dashboard data loading.** Companies are now driven by
+  `data/manifest.yaml` first; per-card files are read only for enrichment
+  (full overview, contacts, prep notes). Manifest summary alone is enough
+  to render the kanban — degrades gracefully if a card file is missing.
+- **Stale-card badge shows day count.** Cards untouched for more than
+  the `stale_card_days` threshold (default 7) now display the actual
+  age (e.g. `stale · 9d`) instead of a binary flag.
+
+### Notes
+- No `data/` schema changes. No migration required.
+
+---
+
 ## [1.0.2] — 2026-06-02
 
 ### Fixed

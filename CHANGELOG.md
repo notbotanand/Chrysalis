@@ -11,6 +11,25 @@ All notable changes to Chrysalis are documented here. This project uses
 
 ---
 
+## [1.1.1] — 2026-07-31
+
+### Fixed
+- **Terminal-stage status dots on the dashboard.**
+  `framework/tools/generate_dashboard.py` had no dot-color CSS for the
+  `closed_won`, `closed_lost`, and `closed_paused` stages, so any company that
+  reached a terminal stage rendered with an uncolored status dot in the company
+  sidebar. These three stages are canonical schema values — defined in the stage
+  enum in `framework/templates/pipeline-card.md` and consumed by the
+  `pipeline-health-check`, `onboarding-sweep`, and `morning-sweep` workflows — so
+  the missing styling was a real mismatch between the documented schema and the
+  rendered UI. Added `.dot-closed_won` (green, matching `offer`), `.dot-closed_lost`
+  (grey, matching `rejected`/`withdrawn`), and `.dot-closed_paused` (grey) rules.
+
+### Notes
+- No `data/` schema changes. No migration required.
+
+---
+
 ## [1.1.0] — 2026-06-20
 
 ### Added

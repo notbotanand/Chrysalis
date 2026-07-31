@@ -664,6 +664,9 @@ body{
 .dot-rejected{background:#d1d5db}
 .dot-withdrawn{background:#d1d5db}
 .dot-stalled{background:#d1d5db}
+.dot-closed_won{background:#059669}
+.dot-closed_lost{background:#d1d5db}
+.dot-closed_paused{background:#d1d5db}
 .co-item-name{font-size:13.5px;font-weight:700;flex:1;line-height:1.3}
 .co-star{color:var(--amb);font-size:12px;line-height:1}
 .co-panel{overflow-y:auto;background:transparent;padding:22px 30px;min-height:0}
